@@ -5,9 +5,9 @@ load_dotenv()
 
 class Config:
     # Jira настройки
-    JIRA_URL = os.getenv("JIRA_URL", "https://your-company.atlassian.net")
-    JIRA_EMAIL = os.getenv("JIRA_EMAIL", "your-email@company.com")
-    JIRA_TOKEN = os.getenv("JIRA_TOKEN", "your-api-token")
+    JIRA_URL = os.getenv("JIRA_URL", "http://localhost:8080")
+    JIRA_USERNAME = os.getenv("JIRA_USERNAME", "admin")
+    JIRA_PASSWORD = os.getenv("JIRA_PASSWORD", "")
     JIRA_PROJECT = os.getenv("JIRA_PROJECT", "PROJ")
     
     # Параметры экспорта
@@ -15,19 +15,24 @@ class Config:
     SPRINTS_TO_FETCH = int(os.getenv("SPRINTS_TO_FETCH", "10"))
     
     # YandexGPT настройки
-    YC_FOLDER_ID = os.getenv("YC_FOLDER_ID", "")      # ID каталога в Yandex Cloud
-    YC_API_KEY = os.getenv("YC_API_KEY", "")          # API ключ для YandexGPT
-    YC_IAM_TOKEN = os.getenv("YC_IAM_TOKEN", "")      # IAM токен (альтернатива API ключу)
+    YC_FOLDER_ID = os.getenv("YC_FOLDER_ID", "")
+    YC_API_KEY = os.getenv("YC_API_KEY", "")
+    YC_IAM_TOKEN = os.getenv("YC_IAM_TOKEN", "")
     
     # Пути
     OUTPUT_DIR = "output"
-    ANALYTICS_DIR = f"{OUTPUT_DIR}/analytics"
     
     @classmethod
     def validate(cls):
         """Проверка наличия обязательных переменных"""
-        if not cls.JIRA_TOKEN or cls.JIRA_TOKEN == "your-api-token":
-            raise ValueError("JIRA_TOKEN не задан. Создайте .env файл")
+        if not cls.JIRA_PASSWORD:
+            raise ValueError("JIRA_PASSWORD не задан. Создайте .env файл")
+        if not cls.JIRA_PROJECT or cls.JIRA_PROJECT == "PROJ":
+            raise ValueError("JIRA_PROJECT не задан. Укажите ключ проекта")
+        
+        # Создаем выходную папку, если её нет
+        os.makedirs(cls.OUTPUT_DIR, exist_ok=True)
+        
         return True
     
     @classmethod
