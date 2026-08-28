@@ -1,0 +1,76 @@
+﻿services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: jira_analytics_postgres
+    environment:
+      POSTGRES_USER: jira_admin
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: jira_analytics
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jira_admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: jira_analytics_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: jira_analytics_api
+    environment:
+      - DATABASE_URL=postgresql://jira_admin:secure_password@postgres:5432/jira_analytics
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=your-secret-key-change-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../app:/app/app
+      - ../scripts:/app/scripts
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: jira_analytics_celery
+    environment:
+      - DATABASE_URL=postgresql://jira_admin:secure_password@postgres:5432/jira_analytics
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../app:/app/app
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
