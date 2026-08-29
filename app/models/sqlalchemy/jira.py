@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -17,6 +17,8 @@ class JiraProject(Base):
     
     issues = relationship("JiraIssue", back_populates="project")
     sprints = relationship("JiraSprint", back_populates="project")
+    analytics = relationship("AnalyticsHistory", back_populates="project")
+    recommendations = relationship("AIRecommendation", back_populates="project")
 
 
 class JiraSprint(Base):
